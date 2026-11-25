@@ -113,7 +113,7 @@ def guardar_csv(ruta, registros):
 # --- Problema 2.d - Aplicación cíclica sobre las cuatro planillas --------------
 if __name__ == '__main__':
     for k in range(1, 5):
-        ruta = Path(__file__).parent / f'grade_sheet_{k}.png'
+        ruta = Path(__file__).parent / 'data' / f'grade_sheet_{k}.png'
         print(f'\n=============== {Path(ruta).name} ===============')
         img, img_th, filas, cols, registros = validar_planilla(ruta)       # Punto a
         alumnos = imagen_no_aprobados(ruta, img, img_th, filas, cols, registros)   # Punto b

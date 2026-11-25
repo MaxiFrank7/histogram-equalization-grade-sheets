@@ -42,7 +42,7 @@ L = 62
 
 
 if __name__ == '__main__':
-    ruta = Path(__file__).parent / 'Imagen_con_detalles_escondidos.tif'
+    ruta = Path(__file__).parent / 'data' / 'Imagen_con_detalles_escondidos.tif'
     img = cv2.imread(str(ruta), cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise FileNotFoundError(f'No se pudo cargar la imagen desde {ruta}')
