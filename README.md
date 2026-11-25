@@ -1,104 +1,125 @@
-# TP1: ecualización local de histograma y validación de planillas
+# Ecualización local de histograma y validación de planillas
 
-Materia: Procesamiento de Imágenes I (IA 4.4), Tecnicatura Universitaria en Inteligencia Artificial, FCEIA, Universidad Nacional de Rosario. Año 2026, 2° semestre. Grupo 8.
+Trabajo práctico grupal de cuatro integrantes. Procesamiento de Imágenes I, Tecnicatura Universitaria en Inteligencia Artificial (FCEIA, UNR), segundo cuatrimestre de 2026. Grupo 8.
 
-## Autores
+[English version](README.en.md)
 
-- Civetta, Valentino
-- Frank, Maximiliano
-- Fucci, Milagros
-- Winter, Federico
+Resolvimos dos problemas con OpenCV y NumPy. En el primero implementamos la ecualización local de histograma y la usamos para revelar cinco detalles escondidos en una imagen. En el segundo validamos de forma automática cuatro planillas de calificaciones escaneadas: el script informa qué campos cumplen las reglas, arma una imagen con los alumnos que no aprobaron y guarda un CSV por planilla.
 
-## Descripción
+## Equipo
 
-El trabajo tiene dos problemas. La consigna completa está en `TUIA_PDI_TP1_2026_C2.pdf`.
+Este es un trabajo grupal de cuatro personas:
 
-El Problema 1 implementa la ecualización local de histograma (puntos a, b y c). Aplicamos la función a `Imagen_con_detalles_escondidos.tif` para encontrar los detalles ocultos de cada zona y comparamos el resultado con distintos tamaños de ventana, cuadradas y rectangulares.
+- Valentino Civetta
+- Maximiliano Frank
+- Milagros Fucci
+- Federico Winter
 
-El Problema 2 valida de forma automática planillas de calificaciones en formato imagen (puntos a, b, c y d). Para cada registro informa qué campos cumplen las reglas, genera una imagen con los alumnos que no aprobaron y guarda un CSV con los resultados. El script procesa en ciclo las cuatro planillas `grade_sheet_<id>.png`.
+Repositorio original del grupo: [valentinocivetta04/Procesamiento_Imagenes_Grupo8](https://github.com/valentinocivetta04/Procesamiento_Imagenes_Grupo8).
 
-## Estructura del repositorio
+Este repositorio es una copia en la cuenta de Maximiliano Frank, reorganizada para mostrarla como portfolio. La autoría es del grupo. Trabajamos juntos en reuniones por Discord, y quien compartía pantalla hacía los commits. Por eso el historial de git no refleja quién resolvió cada parte.
 
-```
-.
-├── README.md                                   Este archivo.
-├── Informe_TP1_PDI_Grupo8.pdf                  Informe del trabajo práctico.
-├── TUIA_PDI_TP1_2026_C2.pdf                    Consigna del TP.
-├── requirements.txt                            Dependencias del proyecto.
-├── .gitignore                                  Excluye .venv/, archivos temporales y los archivos de salida (no_aprobados_*.png y validacion_*.csv).
-├── problema1.py                                Problema 1: ecualización local, detalles ocultos y análisis de ventanas.
-├── problema2.py                                Problema 2: validación de planillas, imagen de no aprobados y CSV.
-├── Imagen_con_detalles_escondidos.tif          Entrada del Problema 1 (256x256, 8 bits).
-├── grade_sheet_empty.png                       Planilla vacía de ejemplo (no la procesa el script).
-├── grade_sheet_1.png                           Entrada del Problema 2: planilla 1.
-├── grade_sheet_2.png                           Entrada del Problema 2: planilla 2.
-├── grade_sheet_3.png                           Entrada del Problema 2: planilla 3.
-└── grade_sheet_4.png                           Entrada del Problema 2: planilla 4.
-```
+## Problema 1: ecualización local de histograma
 
-`problema2.py` genera al ejecutarse `no_aprobados_grade_sheet_<id>.png` (punto 2b) y `validacion_grade_sheet_<id>.csv` (punto 2c) junto a cada planilla. Esos archivos de salida no están en el repositorio.
+La función `ecualizacion_local(img, M, N)` recorre la imagen píxel a píxel. Para cada píxel toma una ventana de M x N, le aplica `cv2.equalizeHist` y conserva solo el valor central. Los bordes se completan replicando los píxeles del contorno.
 
-## Requisitos
+Aplicada a `Imagen_con_detalles_escondidos.tif` (256 x 256, 8 bits), la ecualización local muestra lo que la global no muestra. En cada uno de los cinco cuadrados oscuros aparece un detalle:
 
-Python 3.13.16. Es la versión con la que ejecutamos y verificamos todos los comandos de este README.
+| Zona | Detalle |
+|---|---|
+| Superior izquierda | Un cuadrado pequeño |
+| Superior derecha | Una línea diagonal |
+| Centro | La letra "a" minúscula |
+| Inferior izquierda | Cuatro líneas horizontales paralelas |
+| Inferior derecha | Un círculo |
+
+![Imagen original, ecualización global y ecualización local de 21x21](assets/ecualizacion_global_vs_local.png)
+
+*Imagen original, ecualización global y ecualización local con ventana de 21 x 21.*
+
+Comparamos ventanas cuadradas y rectangulares. Con 15 x 15 y 21 x 21 aparecen los cinco detalles completos y el fondo queda casi limpio. Con 3 x 3 y 7 x 7 el fondo se llena de manchas. Con 61 x 61 y 101 x 101 los detalles se apagan, porque el lado de la ventana se acerca al de los cuadrados (62 píxeles) o lo supera. Elegimos 21 x 21 porque deja menos marcas negras en el fondo.
+
+![Ecualización local con ventanas cuadradas de distinto tamaño](assets/ventanas_cuadradas.png)
+
+*Efecto del tamaño de la ventana cuadrada (el script también muestra las ventanas rectangulares).*
+
+## Problema 2: validación de planillas
+
+Cada planilla es una imagen con una tabla de 20 registros. El script:
+
+1. Encuentra las líneas de la tabla con las sumas por fila y por columna (22 horizontales y 8 verticales en las cuatro planillas) y recorta cada celda.
+2. Cuenta los caracteres de cada celda con componentes conectadas.
+3. Separa las palabras con un umbral de 6 píxeles entre caracteres.
+4. Valida cada campo con una regla de cantidad de caracteres y de palabras: Legajo, Nombre y apellido, Parcial 1, Parcial 2, Parcial 3 y Condición Final.
+5. Distingue las letras L, R y A de la Condición Final por su forma: la L y la R tienen la columna izquierda llena y la R tiene un agujero.
+6. Genera `no_aprobados_grade_sheet_<id>.png` con los alumnos en condición L o R y `validacion_grade_sheet_<id>.csv` con el OK o MAL de cada campo.
+
+Resultados de las cuatro planillas, tal como los imprime el script:
+
+| Planilla | Registros correctos | No aprobados (R / L) |
+|---|---|---|
+| `grade_sheet_1.png` | 15 de 20 | 4 / 6 |
+| `grade_sheet_2.png` | 3 de 20 | 0 / 3 |
+| `grade_sheet_3.png` | 0 de 20 | 0 / 0 |
+| `grade_sheet_4.png` | 6 de 20 | 2 / 2 |
+
+Un registro es correcto solo si sus seis campos cumplen las reglas. Las filas vacías cuentan como MAL. Solo los registros correctos entran en la imagen de no aprobados, por eso la planilla 3 no tiene alumnos en ella.
+
+## Tecnologías
+
+Ejecutado con Python 3.13.16.
 
 | Librería | Versión | Uso |
 |---|---|---|
 | numpy | 2.5.3 | Arrays, sumas por filas y columnas |
-| opencv-python | 5.0.0.93 | Bordes, ecualización, componentes conectadas, contornos |
+| opencv-python | 5.0.0.93 | Ecualización, componentes conectadas, contornos |
 | matplotlib | 3.11.2 | Figuras del Problema 1 |
 
-`pip` instala junto con matplotlib estas dependencias: contourpy 1.4.0, cycler 0.12.1, fonttools 4.66.1, kiwisolver 1.5.1, packaging 26.3, pillow 12.3.0, pyparsing 3.3.3, python-dateutil 2.9.0.post0 y six 1.17.0.
+El archivo `requirements.txt` no fija versiones. Con él, `pip` instala las más recientes.
 
-El archivo `requirements.txt` no fija versiones. Con él, `pip` instala las versiones más recientes disponibles, que en nuestra ejecución fueron las de la tabla.
+## Estructura del repositorio
 
-## Instalación
+```
+problema1.py                              ecualización local y detalles ocultos
+problema2.py                              validación de planillas, imagen de no aprobados y CSV
+data/                                     imagen del Problema 1 y planillas del Problema 2
+assets/                                   figuras exportadas del Problema 1
+docs/Informe_TP1_PDI_Grupo8.pdf           informe completo del grupo
+requirements.txt                          dependencias
+README.md                                 este archivo
+README.en.md                              versión en inglés
+```
 
-Desde la carpeta del repositorio, en Linux o macOS:
+## Cómo ejecutarlo
+
+Hay que ejecutar los scripts desde la raíz del repositorio.
 
 ```bash
+git clone https://github.com/MaxiFrank7/histogram-equalization-grade-sheets.git
+cd histogram-equalization-grade-sheets
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Para instalar exactamente las versiones de la tabla:
-
-```bash
-pip install numpy==2.5.3 opencv-python==5.0.0.93 matplotlib==3.11.2
-```
-
-## Ejecución
-
-Ejecutá los scripts desde la carpeta del repositorio, con el entorno virtual activado.
-
-### problema1.py
-
-```bash
 python problema1.py
-```
-
-- Entrada: `Imagen_con_detalles_escondidos.tif`.
-- Salida por consola: la lista de detalles ocultos del punto 1b, una línea por zona.
-- Salida gráfica: cuatro ventanas de matplotlib (global contra local, detalles por zona, ventanas cuadradas y ventanas rectangulares). El script no guarda archivos. Cuando cerrás las ventanas termina.
-- Sin pantalla (por ejemplo en un servidor), anteponé `MPLBACKEND=Agg`. En ese caso no se abre ninguna ventana y el script solo imprime la lista de detalles:
-
-```bash
-MPLBACKEND=Agg python problema1.py
-```
-
-El punto 1c calcula varias ventanas grandes píxel a píxel. La ejecución completa tardó unos 4 segundos en la máquina donde la medimos.
-
-### problema2.py
-
-```bash
 python problema2.py
 ```
 
-- Entrada: `grade_sheet_1.png`, `grade_sheet_2.png`, `grade_sheet_3.png` y `grade_sheet_4.png`, que el script busca al lado de `problema2.py`.
-- Salida por consola, para cada planilla: el estado OK o MAL de cada campo de cada registro, el nombre de los archivos generados y un resumen (registros correctos, campos MAL por columna y cantidad de alumnos en R y en L).
-- Archivos que genera, junto a cada planilla: `no_aprobados_grade_sheet_<id>.png` (punto 2b) y `validacion_grade_sheet_<id>.csv` (punto 2c). Si ya existen, los reescribe.
+En Windows, la activación del entorno es `.venv\Scripts\activate`.
+
+- `problema1.py` imprime la lista de detalles ocultos y abre cuatro ventanas de matplotlib. No guarda archivos. Tarda unos 4 segundos. Sin pantalla, se puede anteponer `MPLBACKEND=Agg`.
+- `problema2.py` procesa las cuatro planillas, imprime el estado de cada campo y un resumen, y escribe en `data/` los archivos `no_aprobados_*.png` y `validacion_*.csv`. Esos archivos de salida están en `.gitignore`.
+
+El texto de los scripts y de las figuras está en español.
 
 ## Informe
 
-El informe con la descripción de los ejercicios, el análisis de los problemas, las técnicas, el desarrollo paso a paso y las conclusiones está en [Informe_TP1_PDI_Grupo8.pdf](Informe_TP1_PDI_Grupo8.pdf).
+El análisis de cada problema, las técnicas usadas y las conclusiones están en el [informe del grupo](docs/Informe_TP1_PDI_Grupo8.pdf).
+
+## Limitaciones
+
+- La ecualización local amplifica el ruido. En el fondo claro quedan oscuros los píxeles de nivel 226 de la imagen original, que son el 2,5 % del fondo.
+- El script no mide contraste ni ruido por ventana. Elegimos 21 x 21 mirando las figuras.
+- Las posiciones de los cuadrados del Problema 1 están escritas a mano en la tabla `ZONAS`. El script no encuentra zonas en otra imagen.
+- En el Problema 2 el script no lee caracteres. Cuenta componentes conectadas, mide separaciones y compara la forma de tres letras.
+- Ajustamos los umbrales con estas cuatro planillas. Con otra tipografía u otra escala podrían fallar.
+- La regla del nombre cuenta solo letras. El espacio no es una componente conectada, así que no suma. Es una decisión nuestra, porque la consigna no aclara si el espacio cuenta.
