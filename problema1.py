@@ -32,7 +32,7 @@ def ecualizacion_local(img, M, N):
 
 # --- Problema 1.b - Zonas de la imagen y detalles ocultos -----------------------
 # Esquina superior izquierda (x, y) de cada cuadrado oscuro de 62x62 px, medida a mano sobre la imagen,
-# y detalle observado en cada uno luego de la ecualización local (ver Problema1bc_explicacion.md)
+# y detalle observado en cada uno luego de la ecualización local
 ZONAS = [('Superior izquierda', 6, 6, 'Un cuadrado pequeño'),
          ('Superior derecha', 187, 6, 'Una línea diagonal (de abajo-izq. hacia arriba-der.)'),
          ('Centro', 97, 97, 'La letra "a" minúscula'),
